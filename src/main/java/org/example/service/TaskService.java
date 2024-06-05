@@ -2,6 +2,7 @@ package org.example.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.logging.log4j.util.Strings;
 import org.example.constants.TaskStatus;
 import org.example.model.Task;
 import org.example.persist.TaskRepository;
@@ -12,6 +13,7 @@ import java.sql.Date;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -57,6 +59,39 @@ public class TaskService {
         var entity = this.getById(id);
         return this.entityToObject(entity);
     }
+
+    public Task update(Long id, String title, String description, LocalDate dueDate) {
+        var exists = this.getById(id);
+
+        exists.setTitle(Strings.isEmpty(title) ? exists.getTitle() : title);
+        exists.setDescription(Strings.isEmpty(description) ? exists.getDescription() : description);
+        exists.setDueDate(Objects.isNull(dueDate) ? exists.getDueDate() : Date.valueOf(dueDate));
+
+        this.taskRepository.save(exists);
+
+        return this.entityToObject(exists);
+    }
+
+    public Task updateStatus(Long id, TaskStatus status) {
+        var entity = this.getById(id);
+
+        entity.setStatus(status);
+
+        var saved = this.taskRepository.save(entity);
+
+        return this.entityToObject(saved);
+    }
+
+    public boolean delete(Long id) {
+        try {
+            this.taskRepository.deleteById(id);
+        } catch (Exception e) {
+            log.error("An Error occurred while deleting [{}]", e.getMessage());
+            return false;
+        }
+        return true;
+    }
+
 
     private TaskEntity getById(Long id) {
         return this.taskRepository.findById(id).orElseThrow(() -> new IllegalArgumentException(String.format("Not exists task id [%d]", id)));
